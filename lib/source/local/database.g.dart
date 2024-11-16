@@ -8,6 +8,15 @@ class $GeoDataTable extends GeoData with TableInfo<$GeoDataTable, GeoDataData> {
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $GeoDataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
   static const VerificationMeta _ipMeta = const VerificationMeta('ip');
   @override
   late final GeneratedColumn<String> ip = GeneratedColumn<String>(
@@ -42,7 +51,7 @@ class $GeoDataTable extends GeoData with TableInfo<$GeoDataTable, GeoDataData> {
       type: DriftSqlType.string, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [ip, city, regionName, country, lat, lon];
+      [id, ip, city, regionName, country, lat, lon];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -53,6 +62,9 @@ class $GeoDataTable extends GeoData with TableInfo<$GeoDataTable, GeoDataData> {
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('ip')) {
       context.handle(_ipMeta, ip.isAcceptableOrUnknown(data['ip']!, _ipMeta));
     } else if (isInserting) {
@@ -94,11 +106,13 @@ class $GeoDataTable extends GeoData with TableInfo<$GeoDataTable, GeoDataData> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => const {};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   GeoDataData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return GeoDataData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       ip: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}ip'])!,
       city: attachedDatabase.typeMapping
@@ -121,6 +135,7 @@ class $GeoDataTable extends GeoData with TableInfo<$GeoDataTable, GeoDataData> {
 }
 
 class GeoDataData extends DataClass implements Insertable<GeoDataData> {
+  final int id;
   final String ip;
   final String city;
   final String regionName;
@@ -128,7 +143,8 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   final String lat;
   final String lon;
   const GeoDataData(
-      {required this.ip,
+      {required this.id,
+      required this.ip,
       required this.city,
       required this.regionName,
       required this.country,
@@ -137,6 +153,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
     map['ip'] = Variable<String>(ip);
     map['city'] = Variable<String>(city);
     map['region_name'] = Variable<String>(regionName);
@@ -148,6 +165,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
 
   GeoDataCompanion toCompanion(bool nullToAbsent) {
     return GeoDataCompanion(
+      id: Value(id),
       ip: Value(ip),
       city: Value(city),
       regionName: Value(regionName),
@@ -161,6 +179,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return GeoDataData(
+      id: serializer.fromJson<int>(json['id']),
       ip: serializer.fromJson<String>(json['ip']),
       city: serializer.fromJson<String>(json['city']),
       regionName: serializer.fromJson<String>(json['regionName']),
@@ -173,6 +192,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'ip': serializer.toJson<String>(ip),
       'city': serializer.toJson<String>(city),
       'regionName': serializer.toJson<String>(regionName),
@@ -183,13 +203,15 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   }
 
   GeoDataData copyWith(
-          {String? ip,
+          {int? id,
+          String? ip,
           String? city,
           String? regionName,
           String? country,
           String? lat,
           String? lon}) =>
       GeoDataData(
+        id: id ?? this.id,
         ip: ip ?? this.ip,
         city: city ?? this.city,
         regionName: regionName ?? this.regionName,
@@ -199,6 +221,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
       );
   GeoDataData copyWithCompanion(GeoDataCompanion data) {
     return GeoDataData(
+      id: data.id.present ? data.id.value : this.id,
       ip: data.ip.present ? data.ip.value : this.ip,
       city: data.city.present ? data.city.value : this.city,
       regionName:
@@ -212,6 +235,7 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   @override
   String toString() {
     return (StringBuffer('GeoDataData(')
+          ..write('id: $id, ')
           ..write('ip: $ip, ')
           ..write('city: $city, ')
           ..write('regionName: $regionName, ')
@@ -223,11 +247,12 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
   }
 
   @override
-  int get hashCode => Object.hash(ip, city, regionName, country, lat, lon);
+  int get hashCode => Object.hash(id, ip, city, regionName, country, lat, lon);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is GeoDataData &&
+          other.id == this.id &&
           other.ip == this.ip &&
           other.city == this.city &&
           other.regionName == this.regionName &&
@@ -237,30 +262,30 @@ class GeoDataData extends DataClass implements Insertable<GeoDataData> {
 }
 
 class GeoDataCompanion extends UpdateCompanion<GeoDataData> {
+  final Value<int> id;
   final Value<String> ip;
   final Value<String> city;
   final Value<String> regionName;
   final Value<String> country;
   final Value<String> lat;
   final Value<String> lon;
-  final Value<int> rowid;
   const GeoDataCompanion({
+    this.id = const Value.absent(),
     this.ip = const Value.absent(),
     this.city = const Value.absent(),
     this.regionName = const Value.absent(),
     this.country = const Value.absent(),
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
-    this.rowid = const Value.absent(),
   });
   GeoDataCompanion.insert({
+    this.id = const Value.absent(),
     required String ip,
     required String city,
     required String regionName,
     required String country,
     required String lat,
     required String lon,
-    this.rowid = const Value.absent(),
   })  : ip = Value(ip),
         city = Value(city),
         regionName = Value(regionName),
@@ -268,47 +293,50 @@ class GeoDataCompanion extends UpdateCompanion<GeoDataData> {
         lat = Value(lat),
         lon = Value(lon);
   static Insertable<GeoDataData> custom({
+    Expression<int>? id,
     Expression<String>? ip,
     Expression<String>? city,
     Expression<String>? regionName,
     Expression<String>? country,
     Expression<String>? lat,
     Expression<String>? lon,
-    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (ip != null) 'ip': ip,
       if (city != null) 'city': city,
       if (regionName != null) 'region_name': regionName,
       if (country != null) 'country': country,
       if (lat != null) 'lat': lat,
       if (lon != null) 'lon': lon,
-      if (rowid != null) 'rowid': rowid,
     });
   }
 
   GeoDataCompanion copyWith(
-      {Value<String>? ip,
+      {Value<int>? id,
+      Value<String>? ip,
       Value<String>? city,
       Value<String>? regionName,
       Value<String>? country,
       Value<String>? lat,
-      Value<String>? lon,
-      Value<int>? rowid}) {
+      Value<String>? lon}) {
     return GeoDataCompanion(
+      id: id ?? this.id,
       ip: ip ?? this.ip,
       city: city ?? this.city,
       regionName: regionName ?? this.regionName,
       country: country ?? this.country,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
-      rowid: rowid ?? this.rowid,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
     if (ip.present) {
       map['ip'] = Variable<String>(ip.value);
     }
@@ -327,22 +355,19 @@ class GeoDataCompanion extends UpdateCompanion<GeoDataData> {
     if (lon.present) {
       map['lon'] = Variable<String>(lon.value);
     }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
     return map;
   }
 
   @override
   String toString() {
     return (StringBuffer('GeoDataCompanion(')
+          ..write('id: $id, ')
           ..write('ip: $ip, ')
           ..write('city: $city, ')
           ..write('regionName: $regionName, ')
           ..write('country: $country, ')
           ..write('lat: $lat, ')
-          ..write('lon: $lon, ')
-          ..write('rowid: $rowid')
+          ..write('lon: $lon')
           ..write(')'))
         .toString();
   }
@@ -360,22 +385,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 }
 
 typedef $$GeoDataTableCreateCompanionBuilder = GeoDataCompanion Function({
+  Value<int> id,
   required String ip,
   required String city,
   required String regionName,
   required String country,
   required String lat,
   required String lon,
-  Value<int> rowid,
 });
 typedef $$GeoDataTableUpdateCompanionBuilder = GeoDataCompanion Function({
+  Value<int> id,
   Value<String> ip,
   Value<String> city,
   Value<String> regionName,
   Value<String> country,
   Value<String> lat,
   Value<String> lon,
-  Value<int> rowid,
 });
 
 class $$GeoDataTableFilterComposer
@@ -387,6 +412,9 @@ class $$GeoDataTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get ip => $composableBuilder(
       column: $table.ip, builder: (column) => ColumnFilters(column));
 
@@ -415,6 +443,9 @@ class $$GeoDataTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get ip => $composableBuilder(
       column: $table.ip, builder: (column) => ColumnOrderings(column));
 
@@ -443,6 +474,9 @@ class $$GeoDataTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get ip =>
       $composableBuilder(column: $table.ip, builder: (column) => column);
 
@@ -485,40 +519,40 @@ class $$GeoDataTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$GeoDataTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
             Value<String> ip = const Value.absent(),
             Value<String> city = const Value.absent(),
             Value<String> regionName = const Value.absent(),
             Value<String> country = const Value.absent(),
             Value<String> lat = const Value.absent(),
             Value<String> lon = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
           }) =>
               GeoDataCompanion(
+            id: id,
             ip: ip,
             city: city,
             regionName: regionName,
             country: country,
             lat: lat,
             lon: lon,
-            rowid: rowid,
           ),
           createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
             required String ip,
             required String city,
             required String regionName,
             required String country,
             required String lat,
             required String lon,
-            Value<int> rowid = const Value.absent(),
           }) =>
               GeoDataCompanion.insert(
+            id: id,
             ip: ip,
             city: city,
             regionName: regionName,
             country: country,
             lat: lat,
             lon: lon,
-            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

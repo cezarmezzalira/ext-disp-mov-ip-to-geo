@@ -4,6 +4,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 part 'database.g.dart';
 
 class GeoData extends Table {
+  IntColumn get id => integer().autoIncrement()();
   TextColumn get ip => text()();
   TextColumn get city => text()();
   TextColumn get regionName => text()();
