@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:ip_to_geo/bindings/main_binding.dart';
 import 'package:ip_to_geo/map_location.dart';
 import 'package:ip_to_geo/widgets/conn_state.dart';
 import 'package:ip_to_geo/widgets/offline.dart';
@@ -8,7 +10,6 @@ const homeRoute = "/home";
 const mapRoute = "/map";
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -18,19 +19,21 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
         useMaterial3: true,
       ),
       initialRoute: homeRoute,
-      routes: {
-        homeRoute: (context) => const MyHomePage(),
-        mapRoute: (context) => MapLocation()
-      },
-      home: const MyHomePage(),
+      getPages: [
+        GetPage(
+            name: homeRoute,
+            page: () => const MyHomePage(),
+            binding: MainBindings()),
+        GetPage(name: mapRoute, page: () => MapLocation())
+      ],
     );
   }
 }
@@ -71,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _getCurrentWidget() => switch (_connectivityStatus) {
         ConnectivityStatus.checking => const CircularProgressIndicator(),
-        ConnectivityStatus.offline => const Offline(),
+        ConnectivityStatus.offline => Offline(),
         ConnectivityStatus.online => Online(),
       };
 }

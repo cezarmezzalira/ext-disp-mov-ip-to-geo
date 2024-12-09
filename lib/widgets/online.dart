@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
+import 'package:get/get.dart';
+import 'package:ip_to_geo/controllers/db_controller.dart';
+import 'package:ip_to_geo/controllers/rest_controller.dart';
 import 'package:ip_to_geo/main.dart';
-import 'package:ip_to_geo/source/local/database.dart';
-import 'package:ip_to_geo/model/geo_data.dart' as model;
-import 'package:ip_to_geo/source/remote/rest_client.dart';
+import 'package:ip_to_geo/model/geo_data.dart';
 
-class Online extends StatelessWidget {
+class Online extends GetView<RestController> {
   Online({super.key});
 
   final TextEditingController _ipController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final dio = Dio();
-    final client = RestClient(dio);
-
-    final database = AppDatabase();
-
     return Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -30,51 +25,44 @@ class Online extends StatelessWidget {
             ),
             TextButton(
                 onPressed: () async {
-                  model.GeoData geo =
-                      await client.getGeoData(_ipController.text);
-                  showBottomSheet(
-                    enableDrag: true,
-                    showDragHandle: true,
-                    context: context,
-                    builder: (context) {
-                      return Wrap(
-                        children: [
-                          ListTile(
-                            title: Text('City: ${geo.city}'),
-                          ),
-                          ListTile(
-                            title: Text('Region Name: ${geo.regionName}'),
-                          ),
-                          ListTile(
-                            title: Text('Country: ${geo.country}'),
-                          ),
-                          IconButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, mapRoute,
-                                    arguments: {
-                                      "lat": geo.lat,
-                                      "lon": geo.lon
-                                    });
-                              },
-                              icon: const Icon(Icons.map_outlined))
-                        ],
-                      );
-                    },
-                  );
-
-                  database
-                      .into(database.geoData)
-                      .insert(GeoDataCompanion.insert(
-                        ip: geo.query ?? "",
-                        city: geo.city ?? "",
-                        regionName: geo.regionName ?? "",
-                        country: geo.country ?? "",
-                        lat: "${geo.lat}",
-                        lon: "${geo.lon}",
-                      ));
+                  controller.getGeoIp(ip: _ipController.text);
                 },
-                child: const Text("Find"))
+                child: const Text("Find")),
+            controller.obx(
+              (geo) {
+                Get.find<DbController>().insertData(geo: geo);
+
+                return _onSuccess(context, geo);
+              },
+              onEmpty: null,
+              onLoading: const CircularProgressIndicator(),
+              onError: (error) => Text(error ?? "Erro inesperado!"),
+            )
           ],
         ));
+  }
+
+  Widget _onSuccess(BuildContext context, GeoData? geo) {
+    return Card(
+      child: Wrap(
+        children: [
+          ListTile(
+            title: Text('City: ${geo?.city}'),
+          ),
+          ListTile(
+            title: Text('Region Name: ${geo?.regionName}'),
+          ),
+          ListTile(
+            title: Text('Country: ${geo?.country}'),
+          ),
+          IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, mapRoute,
+                    arguments: {"lat": geo?.lat, "lon": geo?.lon});
+              },
+              icon: const Icon(Icons.map_outlined))
+        ],
+      ),
+    );
   }
 }
